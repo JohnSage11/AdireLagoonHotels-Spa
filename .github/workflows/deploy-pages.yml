@@ -28,7 +28,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -40,7 +39,7 @@ jobs:
         run: |
           rm -rf app/api
           find app components lib -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i "s|'/images/|'/$GITHUB_RP_NAME/images/|g" {} +
-          find app components lib -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i 's|"/images/|"/'"${{ github.event.repository.name }}"'/images/|g' {} +
+          find app components lib -type f \( -name "*.ts" -o -name "*.tsx" \) -exec sed -i "s|\"/images/|\"/$GITHUB_RP_NAME/images/|g" {} +
         env:
           GITHUB_RP_NAME: ${{ github.event.repository.name }}
 

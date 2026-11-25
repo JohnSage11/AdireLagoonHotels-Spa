@@ -144,6 +144,21 @@ function computeHaversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return R * c;
 }
 
+function isValidClientMapsKey(key?: string): boolean {
+  if (!key) return false;
+  const trimmed = key.trim();
+  if (
+    trimmed.length < 30 ||
+    trimmed.includes('MY_') ||
+    trimmed.includes('YOUR_') ||
+    trimmed.includes('PLACEHOLDER') ||
+    trimmed.includes('FIREBASE_')
+  ) {
+    return false;
+  }
+  return trimmed.startsWith('AIza');
+}
+
 // Install global Tier-1 Quota & Auth failure listener for Demo Key protection
 let quotaHooksRegistered = false;
 function ensureGoogleMapsQuotaHooks() {
@@ -151,19 +166,26 @@ function ensureGoogleMapsQuotaHooks() {
   quotaHooksRegistered = true;
 
   (window as unknown as Record<string, unknown>).gm_authFailure = () => {
-    window.dispatchEvent(new CustomEvent('gmp-quota-exceeded'));
+    window.dispatchEvent(new CustomEvent('gmp-map-fallback'));
   };
 
   const origError = console.error;
   console.error = (...args: unknown[]) => {
-    origError.apply(console, args);
     const msg = args.map((a) => String(a)).join(' ');
     if (msg.includes('OverQuotaMapError') || msg.includes('QuotaExceededError')) {
       window.dispatchEvent(new CustomEvent('gmp-quota-exceeded'));
+      return;
     }
-    if (msg.includes('ApiProjectMapError') || msg.includes('InvalidKeyMapError')) {
+    if (
+      msg.includes('ApiProjectMapError') ||
+      msg.includes('InvalidKeyMapError') ||
+      msg.includes('MissingKeyMapError') ||
+      msg.includes('RefererNotAllowedMapError')
+    ) {
       window.dispatchEvent(new CustomEvent('gmp-map-fallback'));
+      return;
     }
+    origError.apply(console, args);
   };
 }
 
@@ -200,7 +222,7 @@ function RouteAndCameraController({
     map.setZoom(15);
   }, [map, destination, recenterSignal]);
 
-  // Render interactive vector circle beacons for Victoria Island Hotel & Lagos departure hubs (works without requiring a custom Cloud mapId)
+  // Render interactive vector circle beacons for Victoria Island Hotel & Lagos departure hubs
   useEffect(() => {
     if (!map || typeof google === 'undefined') return;
 
@@ -209,7 +231,6 @@ function RouteAndCameraController({
 
     const created: google.maps.Circle[] = [];
 
-    // Hotel gold halo & core beacon
     const hotelHalo = new google.maps.Circle({
       map,
       center: destination,
@@ -225,7 +246,6 @@ function RouteAndCameraController({
     hotelHalo.addListener('click', () => onOpenHotelInfo());
     created.push(hotelHalo);
 
-    // Curated Lagos hubs
     CURATED_ORIGINS.forEach((pt) => {
       const isSelected = selectedOriginId === pt.id;
       const hubCircle = new google.maps.Circle({
@@ -402,13 +422,10 @@ export default function LagosLocationMap({ onBookWithTransfer }: LagosLocationMa
   const [hotelInfoOpen, setHotelInfoOpen] = useState<boolean>(true);
   const [recenterSignal, setRecenterSignal] = useState<number>(0);
   const [quotaExceeded, setQuotaExceeded] = useState<boolean>(false);
-  const [useInteractiveEmbedFallback, setUseInteractiveEmbedFallback] = useState<boolean>(false);
-  const [runtimeApiKey, setRuntimeApiKey] = useState<string>(
-    (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string) ||
-      (process.env.GOOGLE_MAPS_API_KEY as string) ||
-      ((globalThis as unknown as Record<string, string>).GOOGLE_MAPS_API_KEY ?? '')
-  );
-  const [keyChecked, setKeyChecked] = useState<boolean>(Boolean(runtimeApiKey));
+
+  // Default to the zero-error interactive Google Maps canvas unless a verified valid JS SDK key is explicitly confirmed
+  const [useInteractiveEmbedFallback, setUseInteractiveEmbedFallback] = useState<boolean>(true);
+  const [runtimeApiKey, setRuntimeApiKey] = useState<string>('');
   const [liveRouteMetrics, setLiveRouteMetrics] = useState<{
     distanceKm: string;
     durationMins: number;
@@ -417,32 +434,18 @@ export default function LagosLocationMap({ onBookWithTransfer }: LagosLocationMa
   useEffect(() => {
     ensureGoogleMapsQuotaHooks();
     const handleQuota = () => setQuotaExceeded(true);
-    const handleFallback = () => setUseInteractiveEmbedFallback(true);
+    const handleFallback = () => {
+      setUseInteractiveEmbedFallback(true);
+      setRuntimeApiKey('');
+    };
     window.addEventListener('gmp-quota-exceeded', handleQuota);
     window.addEventListener('gmp-map-fallback', handleFallback);
-
-    if (!runtimeApiKey) {
-      fetch('/api/maps-config')
-        .then((res) => res.json())
-        .then((data: { apiKey?: string }) => {
-          if (data?.apiKey) {
-            setRuntimeApiKey(data.apiKey);
-          } else {
-            setUseInteractiveEmbedFallback(true);
-          }
-          setKeyChecked(true);
-        })
-        .catch(() => {
-          setUseInteractiveEmbedFallback(true);
-          setKeyChecked(true);
-        });
-    }
 
     return () => {
       window.removeEventListener('gmp-quota-exceeded', handleQuota);
       window.removeEventListener('gmp-map-fallback', handleFallback);
     };
-  }, [runtimeApiKey]);
+  }, []);
 
   const handleUseMyLiveLocation = () => {
     if (typeof window === 'undefined' || !('geolocation' in navigator)) {
@@ -667,7 +670,7 @@ export default function LagosLocationMap({ onBookWithTransfer }: LagosLocationMa
 
           {/* Interactive Google Maps Container (Explicit height required per CF2) */}
           <div className="relative w-full h-[440px] sm:h-[500px] flex-1">
-            {keyChecked && runtimeApiKey && !useInteractiveEmbedFallback ? (
+            {isValidClientMapsKey(runtimeApiKey) && !useInteractiveEmbedFallback ? (
               <APIProvider apiKey={runtimeApiKey} libraries={['routes']}>
                 <GoogleMap
                   defaultCenter={hotelPosition}
