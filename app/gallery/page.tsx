@@ -30,6 +30,7 @@ import {
   GALLERY_ITEMS,
   calculateNights,
   formatNaira,
+  resolveHotelImageUrl,
 } from '@/lib/hotel-data';
 
 type OfferingFilter = 'all' | 'rooms' | 'spa' | 'dining' | 'event_hall';
@@ -390,7 +391,7 @@ function GalleryAndCalendarContent() {
                           {/* Room Photography */}
                           <div className="relative h-56 w-full overflow-hidden bg-stone-200">
                             <Image
-                              src={room.imageUrl}
+                              src={resolveHotelImageUrl(room.imageUrl, room.id)}
                               alt={room.name}
                               fill
                               sizes="(max-width: 768px) 100vw, 33vw"
@@ -532,7 +533,7 @@ function GalleryAndCalendarContent() {
                         <div>
                           <div className="relative h-52 w-full overflow-hidden bg-stone-200">
                             <Image
-                              src={service.imageUrl}
+                              src={resolveHotelImageUrl(service.imageUrl, service.id)}
                               alt={service.name}
                               fill
                               sizes="(max-width: 768px) 100vw, 33vw"
@@ -658,7 +659,7 @@ function GalleryAndCalendarContent() {
                 }`}
               >
                 <Image
-                  src={item.imageUrl}
+                  src={resolveHotelImageUrl(item.imageUrl)}
                   alt={item.caption}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"

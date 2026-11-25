@@ -25,6 +25,7 @@ import {
   BOOKING_ADD_ONS,
   BookingRecord,
   formatNaira,
+  resolveHotelImageUrl,
 } from '@/lib/hotel-data';
 import { useHotelStore } from '@/lib/hotel-store';
 import AvailabilityCalendar from '@/components/AvailabilityCalendar';
@@ -673,7 +674,7 @@ export default function BookingModal({
                           aria-label={`Expand photo of ${rm.name}`}
                         >
                           <Image
-                            src={rm.imageUrl}
+                            src={resolveHotelImageUrl(rm.imageUrl, rm.id)}
                             alt={rm.name}
                             fill
                             sizes="(max-width: 768px) 100vw, 420px"
@@ -799,7 +800,10 @@ export default function BookingModal({
                         {/* High-Resolution Expanded Room Image */}
                         <div className="relative h-64 sm:h-96 w-full bg-stone-950 shrink-0">
                           <Image
-                            src={expandedPreviewRoom.imageUrl}
+                            src={resolveHotelImageUrl(
+                              expandedPreviewRoom.imageUrl,
+                              expandedPreviewRoom.id
+                            )}
                             alt={expandedPreviewRoom.name}
                             fill
                             sizes="(max-width: 1024px) 100vw, 800px"

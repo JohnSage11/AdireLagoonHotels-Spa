@@ -25,6 +25,7 @@ import {
   ADIRE_HOTEL_COORDINATES,
   formatNaira,
   calculateNights,
+  resolveHotelImageUrl,
 } from '@/lib/hotel-data';
 
 export default function HomePage() {
@@ -558,7 +559,7 @@ export default function HomePage() {
                   <div>
                     <div className="relative h-52 w-full bg-stone-200 overflow-hidden">
                       <Image
-                        src={room.imageUrl}
+                        src={resolveHotelImageUrl(room.imageUrl, room.id)}
                         alt={room.name}
                         fill
                         sizes="(max-width: 768px) 100vw, 33vw"

@@ -22,7 +22,7 @@ import {
   EyeOff,
 } from 'lucide-react';
 import { useHotelStore } from '@/lib/hotel-store';
-import { formatNaira, BookingRecord } from '@/lib/hotel-data';
+import { formatNaira, BookingRecord, resolveHotelImageUrl } from '@/lib/hotel-data';
 import AvailabilityCalendar from '@/components/AvailabilityCalendar';
 
 export default function AdminDashboardPage() {
@@ -857,7 +857,7 @@ export default function AdminDashboardPage() {
                       <div className="flex items-start gap-4 min-w-0">
                         <div className="relative w-20 h-16 rounded-lg overflow-hidden shrink-0 bg-stone-200 border border-stone-200">
                           <Image
-                            src={svc.imageUrl}
+                            src={resolveHotelImageUrl(svc.imageUrl, svc.id)}
                             alt={svc.name}
                             fill
                             sizes="80px"

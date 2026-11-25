@@ -992,3 +992,67 @@ export function calculateNights(checkIn: string, checkOut: string): number {
   const diff = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   return diff > 0 ? diff : 1;
 }
+
+const VALID_LOCAL_IMAGE_FILES = new Set<string>([
+  'eko_kitchen_jollof_suya_1795566275900.jpg',
+  'grand_ballroom_lagos_event_1795566276900.jpg',
+  'hero_adire_lagoon_sunrise_1795566274564.jpg',
+  'hotel_doc_0.jpg',
+  'hotel_doc_1.jpg',
+  'hotel_doc_2.jpg',
+  'hotel_doc_3.jpg',
+  'hotel_doc_4.jpg',
+  'hotel_doc_5.jpg',
+  'hotel_doc_6.jpg',
+  'hotel_doc_7.jpg',
+  'hotel_doc_8.jpg',
+  'hotel_doc_9.jpg',
+  'hotel_doc_10.jpg',
+  'hotel_doc_11.jpg',
+  'hotel_doc_12.jpg',
+  'rooftop_pool_sunset_deck_1795566276755.jpg',
+]);
+
+const CANONICAL_IMAGE_BY_ID: Record<string, string> = {
+  'classic-room': 'hotel_doc_3.jpg',
+  'superior-lagoon-room': 'hotel_doc_8.jpg',
+  'deluxe-balcony-room': 'hotel_doc_1.jpg',
+  'family-suite': 'hotel_doc_4.jpg',
+  'executive-suite': 'hotel_doc_9.jpg',
+  'presidential-suite': 'rooftop_pool_sunset_deck_1795566276755.jpg',
+  'spa-shea-butter-massage': 'hotel_doc_10.jpg',
+  'spa-hibiscus-facial': 'hotel_doc_6.jpg',
+  'spa-couples-retreat': 'hotel_doc_11.jpg',
+  'dining-eko-kitchen-table': 'eko_kitchen_jollof_suya_1795566275900.jpg',
+  'dining-sunset-suya-cabana': 'rooftop_pool_sunset_deck_1795566276755.jpg',
+  'dining-lagoon-lounge-highlife': 'hotel_doc_2.jpg',
+  'hall-grand-ballroom': 'grand_ballroom_lagos_event_1795566276900.jpg',
+  'hall-iroko-conference': 'hotel_doc_5.jpg',
+  'hall-executive-boardroom': 'hotel_doc_7.jpg',
+};
+
+export function resolveHotelImageUrl(rawUrl?: string, itemId?: string): string {
+  const candidate = (rawUrl || '').trim();
+  const extractedFile = candidate.split('/').pop() || '';
+
+  let validFilename = VALID_LOCAL_IMAGE_FILES.has(extractedFile) ? extractedFile : '';
+  if (!validFilename && itemId && CANONICAL_IMAGE_BY_ID[itemId]) {
+    validFilename = CANONICAL_IMAGE_BY_ID[itemId];
+  }
+  if (!validFilename) {
+    validFilename = 'hotel_doc_3.jpg';
+  }
+
+  let basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  if (
+    !basePath &&
+    typeof window !== 'undefined' &&
+    window.location.pathname.startsWith('/AdireLagoonHotels-Spa')
+  ) {
+    basePath = '/AdireLagoonHotels-Spa';
+  }
+
+  const normalizedBase = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
+  return `${normalizedBase}/images/${validFilename}`;
+}
+

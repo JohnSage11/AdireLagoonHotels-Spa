@@ -28,6 +28,7 @@ import {
   INITIAL_BLOCKS,
   INITIAL_CORPORATE_INQUIRIES,
   INITIAL_REPEAT_GUESTS,
+  resolveHotelImageUrl,
 } from './hotel-data';
 
 interface CreateBookingInput {
@@ -156,8 +157,18 @@ interface HotelStoreContextValue {
 const HotelStoreContext = createContext<HotelStoreContextValue | null>(null);
 
 export function HotelStoreProvider({ children }: { children: React.ReactNode }) {
-  const [rooms, setRooms] = useState<RoomCategory[]>(INITIAL_ROOMS);
-  const [hotelServices, setHotelServices] = useState<HotelServiceItem[]>(INITIAL_HOTEL_SERVICES);
+  const [rooms, setRooms] = useState<RoomCategory[]>(() =>
+    INITIAL_ROOMS.map((r) => ({
+      ...r,
+      imageUrl: resolveHotelImageUrl(r.imageUrl, r.id),
+    }))
+  );
+  const [hotelServices, setHotelServices] = useState<HotelServiceItem[]>(() =>
+    INITIAL_HOTEL_SERVICES.map((s) => ({
+      ...s,
+      imageUrl: resolveHotelImageUrl(s.imageUrl, s.id),
+    }))
+  );
   const [blocks, setBlocks] = useState<AvailabilityBlock[]>(INITIAL_BLOCKS);
   const [bookings, setBookings] = useState<BookingRecord[]>(INITIAL_BOOKINGS);
   const [promoCodes, setPromoCodes] = useState<PromoCodeRecord[]>(INITIAL_PROMO_CODES);
@@ -200,8 +211,16 @@ export function HotelStoreProvider({ children }: { children: React.ReactNode }) 
           const loaded = snapshot.docs
             .map((d) => {
               const raw = d.data() as RoomCategory;
+              const roomId = raw.id || d.id;
+              const canonical = INITIAL_ROOMS.find((r) => r.id === roomId);
+              const normalizedImage = resolveHotelImageUrl(
+                canonical ? canonical.imageUrl : raw.imageUrl,
+                roomId
+              );
               return {
                 ...raw,
+                id: roomId,
+                imageUrl: normalizedImage,
                 isVisibleInGallery: raw.isVisibleInGallery ?? true,
               };
             })
@@ -231,7 +250,20 @@ export function HotelStoreProvider({ children }: { children: React.ReactNode }) 
           }
         } else if (!snapshot.empty) {
           const loaded = snapshot.docs
-            .map((d) => d.data() as HotelServiceItem)
+            .map((d) => {
+              const raw = d.data() as HotelServiceItem;
+              const svcId = raw.id || d.id;
+              const canonical = INITIAL_HOTEL_SERVICES.find((s) => s.id === svcId);
+              const normalizedImage = resolveHotelImageUrl(
+                canonical ? canonical.imageUrl : raw.imageUrl,
+                svcId
+              );
+              return {
+                ...raw,
+                id: svcId,
+                imageUrl: normalizedImage,
+              };
+            })
             .sort((a, b) => a.sortOrder - b.sortOrder);
           setHotelServices(loaded);
         }
