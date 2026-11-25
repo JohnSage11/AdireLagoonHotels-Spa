@@ -1,0 +1,325 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "A luxury room or suite category at The Adire Lagoon Hotel & Spa.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 120 },
+        "slug": { "type": "string", "maxLength": 80 },
+        "sizeSqm": { "type": "number" },
+        "maxGuests": { "type": "number" },
+        "bedConfig": { "type": "string", "maxLength": 120 },
+        "viewType": { "type": "string", "maxLength": 120 },
+        "pricePerNightNgn": { "type": "number" },
+        "totalInventory": { "type": "number" },
+        "availableCount": { "type": "number" },
+        "manualStatusOverride": {
+          "type": "string",
+          "enum": ["auto", "available", "limited", "sold_out"],
+          "maxLength": 32
+        },
+        "breakfastIncluded": { "type": "boolean" },
+        "description": { "type": "string", "maxLength": 600 },
+        "imageUrl": { "type": "string", "maxLength": 300 },
+        "amenities": { "type": "array" },
+        "sortOrder": { "type": "number" },
+        "isVisibleInGallery": { "type": "boolean" }
+      },
+      "required": [
+        "id",
+        "name",
+        "slug",
+        "sizeSqm",
+        "maxGuests",
+        "bedConfig",
+        "viewType",
+        "pricePerNightNgn",
+        "totalInventory",
+        "availableCount",
+        "manualStatusOverride",
+        "breakfastIncluded",
+        "description",
+        "imageUrl",
+        "amenities",
+        "sortOrder"
+      ]
+    },
+    "HotelService": {
+      "title": "HotelService",
+      "description": "A bookable hotel service or venue in the Gallery & Calendar (The Calabash Spa, Eko Kitchen Dining, or Event & Conference Halls).",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "maxLength": 140 },
+        "category": {
+          "type": "string",
+          "enum": ["spa", "dining", "event_hall"],
+          "maxLength": 32
+        },
+        "subtitle": { "type": "string", "maxLength": 180 },
+        "description": { "type": "string", "maxLength": 600 },
+        "imageUrl": { "type": "string", "maxLength": 300 },
+        "priceNgn": { "type": "number" },
+        "priceUnit": { "type": "string", "maxLength": 40 },
+        "dailyCapacity": { "type": "number" },
+        "availableSlots": { "type": "number" },
+        "manualStatusOverride": {
+          "type": "string",
+          "enum": ["auto", "available", "limited", "sold_out"],
+          "maxLength": 32
+        },
+        "isVisibleInGallery": { "type": "boolean" },
+        "durationOrSize": { "type": "string", "maxLength": 80 },
+        "linkedAddOnId": { "type": "string", "maxLength": 64 },
+        "sortOrder": { "type": "number" }
+      },
+      "required": [
+        "id",
+        "name",
+        "category",
+        "subtitle",
+        "description",
+        "imageUrl",
+        "priceNgn",
+        "priceUnit",
+        "dailyCapacity",
+        "availableSlots",
+        "manualStatusOverride",
+        "isVisibleInGallery",
+        "durationOrSize",
+        "linkedAddOnId",
+        "sortOrder"
+      ]
+    },
+    "AvailabilityBlock": {
+      "title": "AvailabilityBlock",
+      "description": "Front-desk date-range room or service block to prevent double-bookings from walk-ins or OTA reservations.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "roomId": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "roomName": { "type": "string", "maxLength": 120 },
+        "startDate": { "type": "string", "maxLength": 20 },
+        "endDate": { "type": "string", "maxLength": 20 },
+        "blockedCount": { "type": "number" },
+        "reason": { "type": "string", "maxLength": 160 },
+        "createdBy": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": [
+        "id",
+        "roomId",
+        "roomName",
+        "startDate",
+        "endDate",
+        "blockedCount",
+        "reason",
+        "createdBy",
+        "createdAt"
+      ]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A direct guest reservation or corporate hold at The Adire Lagoon Hotel & Spa.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "reference": { "type": "string", "maxLength": 40 },
+        "roomId": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "roomName": { "type": "string", "maxLength": 120 },
+        "checkIn": { "type": "string", "maxLength": 20 },
+        "checkOut": { "type": "string", "maxLength": 20 },
+        "nights": { "type": "number" },
+        "roomsCount": { "type": "number" },
+        "adults": { "type": "number" },
+        "children": { "type": "number" },
+        "guestName": { "type": "string", "maxLength": 140 },
+        "guestEmail": { "type": "string", "maxLength": 160 },
+        "guestPhone": { "type": "string", "maxLength": 40 },
+        "arrivalTime": { "type": "string", "maxLength": 40 },
+        "specialRequests": { "type": "string", "maxLength": 600 },
+        "selectedAddOns": { "type": "array" },
+        "addOnsTotalNgn": { "type": "number" },
+        "roomSubtotalNgn": { "type": "number" },
+        "promoCode": { "type": "string", "maxLength": 40 },
+        "discountAmountNgn": { "type": "number" },
+        "vatAmountNgn": { "type": "number" },
+        "consumptionTaxNgn": { "type": "number" },
+        "serviceChargeNgn": { "type": "number" },
+        "totalAmountNgn": { "type": "number" },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["paystack_card", "paystack_transfer", "paystack_ussd", "pay_at_hotel"],
+          "maxLength": 40
+        },
+        "paymentStatus": {
+          "type": "string",
+          "enum": ["paid", "pending_hold", "refunded"],
+          "maxLength": 40
+        },
+        "bookingStatus": {
+          "type": "string",
+          "enum": ["confirmed", "checked_in", "cancelled"],
+          "maxLength": 40
+        },
+        "paystackReference": { "type": "string", "maxLength": 120 },
+        "utmSource": { "type": "string", "maxLength": 80 },
+        "whatsappSent": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": [
+        "id",
+        "reference",
+        "roomId",
+        "roomName",
+        "checkIn",
+        "checkOut",
+        "nights",
+        "roomsCount",
+        "adults",
+        "children",
+        "guestName",
+        "guestEmail",
+        "guestPhone",
+        "arrivalTime",
+        "specialRequests",
+        "selectedAddOns",
+        "addOnsTotalNgn",
+        "roomSubtotalNgn",
+        "promoCode",
+        "discountAmountNgn",
+        "vatAmountNgn",
+        "consumptionTaxNgn",
+        "serviceChargeNgn",
+        "totalAmountNgn",
+        "paymentMethod",
+        "paymentStatus",
+        "bookingStatus",
+        "paystackReference",
+        "utmSource",
+        "whatsappSent",
+        "createdAt"
+      ]
+    },
+    "PromoCode": {
+      "title": "PromoCode",
+      "description": "VIP repeat-guest or seasonal direct booking promo code.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "code": { "type": "string", "maxLength": 40 },
+        "discountPercent": { "type": "number" },
+        "perkDescription": { "type": "string", "maxLength": 240 },
+        "isActive": { "type": "boolean" },
+        "usageCount": { "type": "number" }
+      },
+      "required": ["id", "code", "discountPercent", "perkDescription", "isActive", "usageCount"]
+    },
+    "CorporateInquiry": {
+      "title": "CorporateInquiry",
+      "description": "B2B corporate group block, conference hall, or wedding celebration inquiry.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "inquiryType": {
+          "type": "string",
+          "enum": ["corporate_retainer", "conference_hall", "wedding_celebration"],
+          "maxLength": 40
+        },
+        "companyOrFamilyName": { "type": "string", "maxLength": 160 },
+        "contactName": { "type": "string", "maxLength": 140 },
+        "contactEmail": { "type": "string", "maxLength": 160 },
+        "contactPhone": { "type": "string", "maxLength": 40 },
+        "preferredHall": { "type": "string", "maxLength": 120 },
+        "roomsNeeded": { "type": "number" },
+        "estimatedGuests": { "type": "number" },
+        "eventStartDate": { "type": "string", "maxLength": 20 },
+        "eventEndDate": { "type": "string", "maxLength": 20 },
+        "cateringNeeds": { "type": "string", "maxLength": 300 },
+        "notes": { "type": "string", "maxLength": 600 },
+        "status": {
+          "type": "string",
+          "enum": ["new", "quoted", "confirmed"],
+          "maxLength": 32
+        },
+        "createdAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": [
+        "id",
+        "inquiryType",
+        "companyOrFamilyName",
+        "contactName",
+        "contactEmail",
+        "contactPhone",
+        "preferredHall",
+        "roomsNeeded",
+        "estimatedGuests",
+        "eventStartDate",
+        "eventEndDate",
+        "cateringNeeds",
+        "notes",
+        "status",
+        "createdAt"
+      ]
+    },
+    "RepeatGuest": {
+      "title": "RepeatGuest",
+      "description": "VIP guest captured for direct remarketing.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "fullName": { "type": "string", "maxLength": 140 },
+        "whatsappPhone": { "type": "string", "maxLength": 40 },
+        "email": { "type": "string", "maxLength": 160 },
+        "currentRoomNumber": { "type": "string", "maxLength": 20 },
+        "originChannel": { "type": "string", "maxLength": 80 },
+        "assignedPromoCode": { "type": "string", "maxLength": 40 },
+        "utmSource": { "type": "string", "maxLength": 80 },
+        "createdAt": { "type": "string", "maxLength": 40 }
+      },
+      "required": [
+        "id",
+        "fullName",
+        "whatsappPhone",
+        "email",
+        "currentRoomNumber",
+        "originChannel",
+        "assignedPromoCode",
+        "utmSource",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/Room" },
+      "description": "Stores hotel room categories, live available counts, gallery visibility, and Naira rates."
+    },
+    "/hotel_services/{serviceId}": {
+      "schema": { "$ref": "#/entities/HotelService" },
+      "description": "Stores bookable hotel services (The Calabash Spa, Eko Kitchen Dining, and Event Halls) controllable from the admin console."
+    },
+    "/availability_blocks/{blockId}": {
+      "schema": { "$ref": "#/entities/AvailabilityBlock" },
+      "description": "Stores date-range room and service blocks created by front-desk staff."
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Stores direct website bookings, Paystack payment status, and UTM attribution."
+    },
+    "/promo_codes/{codeId}": {
+      "schema": { "$ref": "#/entities/PromoCode" },
+      "description": "Stores VIP and seasonal promo codes."
+    },
+    "/corporate_inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/CorporateInquiry" },
+      "description": "Stores corporate group blocks, conference room, and wedding inquiries."
+    },
+    "/repeat_guests/{guestId}": {
+      "schema": { "$ref": "#/entities/RepeatGuest" },
+      "description": "Stores repeat-guest VIP leads."
+    }
+  }
+}

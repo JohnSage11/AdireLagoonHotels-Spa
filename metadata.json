@@ -1,0 +1,6 @@
+{
+  "name": "The Adire Lagoon Hotel & Spa",
+  "description": "5-Star Lagoon-Front Hotel & Spa in Victoria Island, Lagos. Commission-free direct booking engine, repeat-guest QR system, corporate inquiry portal, and real-time front-desk inventory dashboard.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

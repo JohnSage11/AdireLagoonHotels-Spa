@@ -1,0 +1,307 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 64 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidRoom(data) {
+      return data.keys().hasAll([
+        'id', 'name', 'slug', 'sizeSqm', 'maxGuests', 'bedConfig', 'viewType',
+        'pricePerNightNgn', 'totalInventory', 'availableCount', 'manualStatusOverride',
+        'breakfastIncluded', 'description', 'imageUrl', 'amenities', 'sortOrder'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'name', 'slug', 'sizeSqm', 'maxGuests', 'bedConfig', 'viewType',
+        'pricePerNightNgn', 'totalInventory', 'availableCount', 'manualStatusOverride',
+        'breakfastIncluded', 'description', 'imageUrl', 'amenities', 'sortOrder', 'isVisibleInGallery'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.name is string && data.name.size() >= 1 && data.name.size() <= 120 &&
+      data.slug is string && data.slug.size() >= 1 && data.slug.size() <= 80 &&
+      data.sizeSqm is number && data.sizeSqm >= 10 && data.sizeSqm <= 500 &&
+      data.maxGuests is number && data.maxGuests >= 1 && data.maxGuests <= 12 &&
+      data.bedConfig is string && data.bedConfig.size() >= 1 && data.bedConfig.size() <= 120 &&
+      data.viewType is string && data.viewType.size() >= 1 && data.viewType.size() <= 120 &&
+      data.pricePerNightNgn is number && data.pricePerNightNgn >= 1000 && data.pricePerNightNgn <= 10000000 &&
+      data.totalInventory is number && data.totalInventory >= 1 && data.totalInventory <= 200 &&
+      data.availableCount is number && data.availableCount >= 0 && data.availableCount <= data.totalInventory &&
+      data.manualStatusOverride is string && data.manualStatusOverride.size() <= 32 &&
+      data.manualStatusOverride in ['auto', 'available', 'limited', 'sold_out'] &&
+      data.breakfastIncluded is bool &&
+      data.description is string && data.description.size() >= 1 && data.description.size() <= 600 &&
+      data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 300 &&
+      data.amenities is list && data.amenities.size() <= 20 &&
+      (data.amenities.size() == 0 || (data.amenities[0] is string && data.amenities[0].size() <= 100)) &&
+      data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 100 &&
+      (!('isVisibleInGallery' in data) || data.isVisibleInGallery is bool);
+    }
+
+    function isValidHotelService(data) {
+      return data.keys().hasAll([
+        'id', 'name', 'category', 'subtitle', 'description', 'imageUrl',
+        'priceNgn', 'priceUnit', 'dailyCapacity', 'availableSlots',
+        'manualStatusOverride', 'isVisibleInGallery', 'durationOrSize',
+        'linkedAddOnId', 'sortOrder'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'name', 'category', 'subtitle', 'description', 'imageUrl',
+        'priceNgn', 'priceUnit', 'dailyCapacity', 'availableSlots',
+        'manualStatusOverride', 'isVisibleInGallery', 'durationOrSize',
+        'linkedAddOnId', 'sortOrder'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.name is string && data.name.size() >= 1 && data.name.size() <= 140 &&
+      data.category is string && data.category.size() <= 32 &&
+      data.category in ['spa', 'dining', 'event_hall'] &&
+      data.subtitle is string && data.subtitle.size() >= 1 && data.subtitle.size() <= 180 &&
+      data.description is string && data.description.size() >= 1 && data.description.size() <= 600 &&
+      data.imageUrl is string && data.imageUrl.size() >= 1 && data.imageUrl.size() <= 300 &&
+      data.priceNgn is number && data.priceNgn >= 0 && data.priceNgn <= 20000000 &&
+      data.priceUnit is string && data.priceUnit.size() >= 1 && data.priceUnit.size() <= 40 &&
+      data.dailyCapacity is number && data.dailyCapacity >= 1 && data.dailyCapacity <= 500 &&
+      data.availableSlots is number && data.availableSlots >= 0 && data.availableSlots <= data.dailyCapacity &&
+      data.manualStatusOverride is string && data.manualStatusOverride.size() <= 32 &&
+      data.manualStatusOverride in ['auto', 'available', 'limited', 'sold_out'] &&
+      data.isVisibleInGallery is bool &&
+      data.durationOrSize is string && data.durationOrSize.size() >= 1 && data.durationOrSize.size() <= 80 &&
+      data.linkedAddOnId is string && data.linkedAddOnId.size() <= 64 &&
+      data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 100;
+    }
+
+    function isValidAvailabilityBlock(data) {
+      return data.keys().hasAll([
+        'id', 'roomId', 'roomName', 'startDate', 'endDate', 'blockedCount', 'reason', 'createdBy', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'roomId', 'roomName', 'startDate', 'endDate', 'blockedCount', 'reason', 'createdBy', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 64 && data.roomId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.roomName is string && data.roomName.size() >= 1 && data.roomName.size() <= 120 &&
+      data.startDate is string && data.startDate.size() >= 8 && data.startDate.size() <= 20 &&
+      data.endDate is string && data.endDate.size() >= 8 && data.endDate.size() <= 20 &&
+      data.blockedCount is number && data.blockedCount >= 1 && data.blockedCount <= 168 &&
+      data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 160 &&
+      data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 120 &&
+      data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 40;
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll([
+        'id', 'reference', 'roomId', 'roomName', 'checkIn', 'checkOut', 'nights', 'roomsCount',
+        'adults', 'children', 'guestName', 'guestEmail', 'guestPhone', 'arrivalTime',
+        'specialRequests', 'selectedAddOns', 'addOnsTotalNgn', 'roomSubtotalNgn', 'promoCode',
+        'discountAmountNgn', 'vatAmountNgn', 'consumptionTaxNgn', 'serviceChargeNgn',
+        'totalAmountNgn', 'paymentMethod', 'paymentStatus', 'bookingStatus',
+        'paystackReference', 'utmSource', 'whatsappSent', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'reference', 'roomId', 'roomName', 'checkIn', 'checkOut', 'nights', 'roomsCount',
+        'adults', 'children', 'guestName', 'guestEmail', 'guestPhone', 'arrivalTime',
+        'specialRequests', 'selectedAddOns', 'addOnsTotalNgn', 'roomSubtotalNgn', 'promoCode',
+        'discountAmountNgn', 'vatAmountNgn', 'consumptionTaxNgn', 'serviceChargeNgn',
+        'totalAmountNgn', 'paymentMethod', 'paymentStatus', 'bookingStatus',
+        'paystackReference', 'utmSource', 'whatsappSent', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.reference is string && data.reference.size() >= 3 && data.reference.size() <= 40 &&
+      data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 64 && data.roomId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.roomName is string && data.roomName.size() >= 1 && data.roomName.size() <= 120 &&
+      data.checkIn is string && data.checkIn.size() >= 8 && data.checkIn.size() <= 20 &&
+      data.checkOut is string && data.checkOut.size() >= 8 && data.checkOut.size() <= 20 &&
+      data.nights is number && data.nights >= 1 && data.nights <= 90 &&
+      data.roomsCount is number && data.roomsCount >= 1 && data.roomsCount <= 20 &&
+      data.adults is number && data.adults >= 1 && data.adults <= 40 &&
+      data.children is number && data.children >= 0 && data.children <= 40 &&
+      data.guestName is string && data.guestName.size() >= 2 && data.guestName.size() <= 140 &&
+      data.guestEmail is string && data.guestEmail.size() >= 3 && data.guestEmail.size() <= 160 &&
+      data.guestPhone is string && data.guestPhone.size() >= 5 && data.guestPhone.size() <= 40 &&
+      data.arrivalTime is string && data.arrivalTime.size() <= 40 &&
+      data.specialRequests is string && data.specialRequests.size() <= 600 &&
+      data.selectedAddOns is list && data.selectedAddOns.size() <= 10 &&
+      (data.selectedAddOns.size() == 0 || (data.selectedAddOns[0] is string && data.selectedAddOns[0].size() <= 80)) &&
+      data.addOnsTotalNgn is number && data.addOnsTotalNgn >= 0 && data.addOnsTotalNgn <= 50000000 &&
+      data.roomSubtotalNgn is number && data.roomSubtotalNgn >= 0 && data.roomSubtotalNgn <= 100000000 &&
+      data.promoCode is string && data.promoCode.size() <= 40 &&
+      data.discountAmountNgn is number && data.discountAmountNgn >= 0 && data.discountAmountNgn <= 50000000 &&
+      data.vatAmountNgn is number && data.vatAmountNgn >= 0 && data.vatAmountNgn <= 20000000 &&
+      data.consumptionTaxNgn is number && data.consumptionTaxNgn >= 0 && data.consumptionTaxNgn <= 20000000 &&
+      data.serviceChargeNgn is number && data.serviceChargeNgn >= 0 && data.serviceChargeNgn <= 20000000 &&
+      data.totalAmountNgn is number && data.totalAmountNgn >= 0 && data.totalAmountNgn <= 150000000 &&
+      data.paymentMethod is string && data.paymentMethod.size() <= 40 &&
+      data.paymentMethod in ['paystack_card', 'paystack_transfer', 'paystack_ussd', 'pay_at_hotel'] &&
+      data.paymentStatus is string && data.paymentStatus.size() <= 40 &&
+      data.paymentStatus in ['paid', 'pending_hold', 'refunded'] &&
+      data.bookingStatus is string && data.bookingStatus.size() <= 40 &&
+      data.bookingStatus in ['confirmed', 'checked_in', 'cancelled'] &&
+      data.paystackReference is string && data.paystackReference.size() <= 120 &&
+      data.utmSource is string && data.utmSource.size() >= 1 && data.utmSource.size() <= 80 &&
+      data.whatsappSent is bool &&
+      data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 40;
+    }
+
+    function isValidPromoCode(data) {
+      return data.keys().hasAll([
+        'id', 'code', 'discountPercent', 'perkDescription', 'isActive', 'usageCount'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'code', 'discountPercent', 'perkDescription', 'isActive', 'usageCount'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.code is string && data.code.size() >= 2 && data.code.size() <= 40 &&
+      data.discountPercent is number && data.discountPercent >= 1 && data.discountPercent <= 50 &&
+      data.perkDescription is string && data.perkDescription.size() >= 1 && data.perkDescription.size() <= 240 &&
+      data.isActive is bool &&
+      data.usageCount is number && data.usageCount >= 0 && data.usageCount <= 1000000;
+    }
+
+    function isValidCorporateInquiry(data) {
+      return data.keys().hasAll([
+        'id', 'inquiryType', 'companyOrFamilyName', 'contactName', 'contactEmail',
+        'contactPhone', 'preferredHall', 'roomsNeeded', 'estimatedGuests',
+        'eventStartDate', 'eventEndDate', 'cateringNeeds', 'notes', 'status', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'inquiryType', 'companyOrFamilyName', 'contactName', 'contactEmail',
+        'contactPhone', 'preferredHall', 'roomsNeeded', 'estimatedGuests',
+        'eventStartDate', 'eventEndDate', 'cateringNeeds', 'notes', 'status', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.inquiryType is string && data.inquiryType.size() <= 40 &&
+      data.inquiryType in ['corporate_retainer', 'conference_hall', 'wedding_celebration'] &&
+      data.companyOrFamilyName is string && data.companyOrFamilyName.size() >= 1 && data.companyOrFamilyName.size() <= 160 &&
+      data.contactName is string && data.contactName.size() >= 1 && data.contactName.size() <= 140 &&
+      data.contactEmail is string && data.contactEmail.size() >= 3 && data.contactEmail.size() <= 160 &&
+      data.contactPhone is string && data.contactPhone.size() >= 5 && data.contactPhone.size() <= 40 &&
+      data.preferredHall is string && data.preferredHall.size() <= 120 &&
+      data.roomsNeeded is number && data.roomsNeeded >= 0 && data.roomsNeeded <= 168 &&
+      data.estimatedGuests is number && data.estimatedGuests >= 1 && data.estimatedGuests <= 2000 &&
+      data.eventStartDate is string && data.eventStartDate.size() >= 8 && data.eventStartDate.size() <= 20 &&
+      data.eventEndDate is string && data.eventEndDate.size() >= 8 && data.eventEndDate.size() <= 20 &&
+      data.cateringNeeds is string && data.cateringNeeds.size() <= 300 &&
+      data.notes is string && data.notes.size() <= 600 &&
+      data.status is string && data.status.size() <= 32 &&
+      data.status in ['new', 'quoted', 'confirmed'] &&
+      data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 40;
+    }
+
+    function isValidRepeatGuest(data) {
+      return data.keys().hasAll([
+        'id', 'fullName', 'whatsappPhone', 'email', 'currentRoomNumber',
+        'originChannel', 'assignedPromoCode', 'utmSource', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'fullName', 'whatsappPhone', 'email', 'currentRoomNumber',
+        'originChannel', 'assignedPromoCode', 'utmSource', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.fullName is string && data.fullName.size() >= 2 && data.fullName.size() <= 140 &&
+      data.whatsappPhone is string && data.whatsappPhone.size() >= 5 && data.whatsappPhone.size() <= 40 &&
+      data.email is string && data.email.size() <= 160 &&
+      data.currentRoomNumber is string && data.currentRoomNumber.size() <= 20 &&
+      data.originChannel is string && data.originChannel.size() >= 1 && data.originChannel.size() <= 80 &&
+      data.assignedPromoCode is string && data.assignedPromoCode.size() >= 2 && data.assignedPromoCode.size() <= 40 &&
+      data.utmSource is string && data.utmSource.size() >= 1 && data.utmSource.size() <= 80 &&
+      data.createdAt is string && data.createdAt.size() >= 1 && data.createdAt.size() <= 40;
+    }
+
+    // Connection test probe
+    match /test/{docId} {
+      allow get: if isValidId(docId);
+    }
+
+    // 1. Rooms Collection
+    match /rooms/{roomId} {
+      allow get: if isValidId(roomId);
+      allow list: if resource.data.pricePerNightNgn >= 1000;
+      allow create: if isValidId(roomId) && isValidRoom(incoming()) && incoming().id == roomId;
+      allow update: if isValidId(roomId) && isValidRoom(incoming()) && incoming().id == existing().id && (
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'availableCount', 'manualStatusOverride', 'pricePerNightNgn', 'isVisibleInGallery'
+        ])
+      );
+    }
+
+    // 2. Hotel Services Collection (Spa, Eko Kitchen Dining, Event Halls)
+    match /hotel_services/{serviceId} {
+      allow get: if isValidId(serviceId);
+      allow list: if resource.data.priceNgn >= 0;
+      allow create: if isValidId(serviceId) && isValidHotelService(incoming()) && incoming().id == serviceId;
+      allow update: if isValidId(serviceId) && isValidHotelService(incoming()) && incoming().id == existing().id && (
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'availableSlots', 'manualStatusOverride', 'priceNgn', 'isVisibleInGallery'
+        ])
+      );
+    }
+
+    // 3. Availability Blocks Collection
+    match /availability_blocks/{blockId} {
+      allow get: if isValidId(blockId);
+      allow list: if resource.data.blockedCount >= 1;
+      allow create: if isValidId(blockId) && isValidAvailabilityBlock(incoming()) && incoming().id == blockId;
+      allow delete: if isValidId(blockId);
+    }
+
+    // 4. Bookings Collection
+    match /bookings/{bookingId} {
+      allow get: if isValidId(bookingId);
+      allow list: if resource.data.nights >= 1;
+      allow create: if isValidId(bookingId) && isValidBooking(incoming()) && incoming().id == bookingId;
+      allow update: if isValidId(bookingId) && isValidBooking(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().reference == existing().reference &&
+        incoming().roomId == existing().roomId &&
+        incoming().createdAt == existing().createdAt && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'bookingStatus', 'paymentStatus', 'paymentMethod', 'paystackReference', 'whatsappSent'
+          ])
+        );
+    }
+
+    // 5. Promo Codes Collection
+    match /promo_codes/{codeId} {
+      allow get: if isValidId(codeId);
+      allow list: if resource.data.discountPercent >= 1;
+      allow create: if isValidId(codeId) && isValidPromoCode(incoming()) && incoming().id == codeId;
+      allow update: if isValidId(codeId) && isValidPromoCode(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().code == existing().code && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['usageCount', 'isActive'])
+        );
+    }
+
+    // 6. Corporate Inquiries Collection
+    match /corporate_inquiries/{inquiryId} {
+      allow get: if isValidId(inquiryId);
+      allow list: if resource.data.estimatedGuests >= 1;
+      allow create: if isValidId(inquiryId) && isValidCorporateInquiry(incoming()) && incoming().id == inquiryId;
+      allow update: if isValidId(inquiryId) && isValidCorporateInquiry(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().createdAt == existing().createdAt && (
+          incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+        );
+    }
+
+    // 7. Repeat Guests Collection
+    match /repeat_guests/{guestId} {
+      allow get: if isValidId(guestId);
+      allow list: if resource.data.assignedPromoCode >= 'A';
+      allow create: if isValidId(guestId) && isValidRepeatGuest(incoming()) && incoming().id == guestId;
+    }
+  }
+}
