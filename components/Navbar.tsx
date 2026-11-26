@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu, X, Lock, ShieldCheck, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { resolveHotelImageUrl } from '@/lib/hotel-data';
 
 interface NavbarProps {
   onBookNowClick?: () => void;
@@ -18,21 +19,34 @@ export default function Navbar({ onBookNowClick }: NavbarProps) {
   // Stealth 7-Click Logo Counter
   const clickCountRef = useRef<number>(0);
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navHomeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [adminLoginOpen, setAdminLoginOpen] = useState<boolean>(false);
   const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loginError, setLoginError] = useState<string>('');
 
+  const isOnHomePage =
+    !pathname ||
+    pathname === '/' ||
+    pathname === '/AdireLagoonHotels-Spa' ||
+    pathname === '/AdireLagoonHotels-Spa/';
+
   const handleLogoSecretClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     clickCountRef.current += 1;
 
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current);
     }
+    if (navHomeTimerRef.current) {
+      clearTimeout(navHomeTimerRef.current);
+      navHomeTimerRef.current = null;
+    }
 
     if (clickCountRef.current >= 7) {
-      e.preventDefault();
       clickCountRef.current = 0;
       setLoginError('');
       setUsername('');
@@ -42,9 +56,20 @@ export default function Navbar({ onBookNowClick }: NavbarProps) {
       return;
     }
 
+    // If user is on a subpage and only taps once, return to home page after a short multi-tap window.
+    // When already on the home page, do zero navigation so the page never reloads or triggers loading.tsx.
+    if (!isOnHomePage && clickCountRef.current === 1) {
+      navHomeTimerRef.current = setTimeout(() => {
+        if (clickCountRef.current === 1) {
+          clickCountRef.current = 0;
+          router.push('/');
+        }
+      }, 420);
+    }
+
     clickTimerRef.current = setTimeout(() => {
       clickCountRef.current = 0;
-    }, 3000);
+    }, 3500);
   };
 
   const handleAdminSignIn = (e: React.FormEvent) => {
@@ -68,28 +93,30 @@ export default function Navbar({ onBookNowClick }: NavbarProps) {
     { label: 'Gallery & Calendar', href: '/gallery' },
   ];
 
+  const logoSrc = resolveHotelImageUrl('/images/hotel_doc_0.jpg');
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200 print:hidden">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-8 px-4 sm:px-6 py-3.5 sm:py-4">
           {/* Zone 1: Official Adire Lagoon Hotel & Spa Logo (7-click stealth trigger for Admin Sign-In) */}
-          <Link
-            href="/"
+          <button
+            type="button"
             onClick={handleLogoSecretClick}
             title="The Adire Lagoon Hotel & Spa"
             aria-label="The Adire Lagoon Hotel & Spa"
-            className="relative h-12 sm:h-14 w-[138px] sm:w-[172px] shrink-0 select-none block"
+            className="relative h-12 sm:h-14 w-[138px] sm:w-[172px] shrink-0 select-none block bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
           >
             <Image
-              src="/images/hotel_doc_0.jpg"
+              src={logoSrc}
               alt="The Adire Lagoon Hotel & Spa Logo"
               fill
               priority
               sizes="(max-width: 640px) 138px, 172px"
               referrerPolicy="no-referrer"
-              className="object-contain object-left"
+              className="object-contain object-left pointer-events-none"
             />
-          </Link>
+          </button>
 
           {/* Zone 2: 5 clean single-line text navigation links */}
           <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-stone-700">
@@ -166,7 +193,7 @@ export default function Navbar({ onBookNowClick }: NavbarProps) {
               <div className="flex items-center gap-3.5 min-w-0">
                 <div className="relative w-16 h-12 rounded-lg bg-white p-1 shrink-0">
                   <Image
-                    src="/images/hotel_doc_0.jpg"
+                    src={logoSrc}
                     alt="The Adire Lagoon Hotel & Spa Logo"
                     fill
                     sizes="64px"

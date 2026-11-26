@@ -14,9 +14,14 @@ import {
   BedDouble,
   Building2,
   Tag,
+  FileText,
+  Search,
+  ShieldCheck,
+  X,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import BookingModal from '@/components/BookingModal';
+import BookingReceiptFolio from '@/components/BookingReceiptFolio';
 import LagosLocationMap from '@/components/LagosLocationMap';
 import { useHotelStore } from '@/lib/hotel-store';
 import {
@@ -45,9 +50,10 @@ export default function HomePage() {
   const [initialAddOns, setInitialAddOns] = useState<string[]>([]);
   const [modalStartStep, setModalStartStep] = useState<1 | 2 | 3>(1);
 
-  // Manage Booking Lookup Modal State
+  // Manage Booking Lookup & Official Receipt State
   const [lookupOpen, setLookupOpen] = useState<boolean>(false);
   const [lookupRef, setLookupRef] = useState<string>('');
+  const [lookupAttempted, setLookupAttempted] = useState<boolean>(false);
 
   // Gift Card Modal State
   const [giftModalOpen, setGiftModalOpen] = useState<boolean>(false);
@@ -86,11 +92,17 @@ export default function HomePage() {
 
   const matchedLookupBooking = lookupRef.trim()
     ? bookings.find(
-        (b) =>
-          b.reference.toUpperCase() === lookupRef.trim().toUpperCase() ||
-          b.guestEmail.toLowerCase() === lookupRef.trim().toLowerCase()
+        (b) => b.reference.toUpperCase() === lookupRef.trim().toUpperCase()
       )
     : null;
+
+  const handleManageBookingSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setLookupAttempted(true);
+    if (matchedLookupBooking) {
+      setLookupOpen(true);
+    }
+  };
 
   const dedicatedPages = [
     {
@@ -148,7 +160,7 @@ export default function HomePage() {
       {/* 1. EDITORIAL AFRO-LUXURY HERO SECTION */}
       <section className="relative min-h-[620px] lg:min-h-[700px] flex items-center bg-[#071930] overflow-hidden">
         <Image
-          src="/images/hero_adire_lagoon_sunrise_1795566274564.jpg"
+          src={resolveHotelImageUrl('/images/hero_adire_lagoon_sunrise_1795566274564.jpg')}
           alt="Sunrise over The Adire Lagoon Hotel & Spa in Victoria Island, Lagos"
           fill
           priority
@@ -357,13 +369,12 @@ export default function HomePage() {
               Free cancellation up to 48 hours before arrival · Pay online in Naira via Paystack or hold for corporate arrival · Welcome Adire Chapman included.
             </p>
             <div className="flex flex-wrap items-center gap-4 text-[#D4A359] font-medium shrink-0">
-              <button
-                type="button"
-                onClick={() => setLookupOpen(true)}
+              <a
+                href="#manage-booking-field"
                 className="hover:underline cursor-pointer"
               >
                 Manage Booking
-              </button>
+              </a>
               <span aria-hidden="true">·</span>
               <button
                 type="button"
@@ -386,6 +397,83 @@ export default function HomePage() {
             </div>
           </div>
         </div>
+
+        {/* 2B. STANDALONE MANAGE BOOKING & OFFICIAL RECEIPT FIELD (FOR EXISTING BOOKINGS) */}
+        <div
+          id="manage-booking-field"
+          className="mt-4 bg-white rounded-2xl border-2 border-[#C8963E]/60 shadow-xl p-5 sm:p-6 text-stone-900"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+            <div className="lg:col-span-7 space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-[0.18em] text-[#C8963E]">
+                <FileText className="w-3.5 h-3.5 text-[#0B2545]" />
+                <span>Already Booked? · Official Stay Receipt Lookup</span>
+              </div>
+              <h2 className="font-serif text-xl sm:text-2xl font-bold text-[#0B2545] leading-snug">
+                Manage Booking &amp; View Your Official Booking Receipt
+              </h2>
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
+                Exclusively for guests who have already completed a reservation and copied their{' '}
+                <strong className="text-[#0B2545] font-mono">Booking Code</strong> (e.g.{' '}
+                <span className="font-mono text-[#0B2545] font-semibold">ADL-849201</span>). Enter
+                your Booking Code to inspect or print your detailed receipt. Bookings remain valid
+                strictly for the booked stay date range.
+              </p>
+            </div>
+
+            <div className="lg:col-span-5">
+              <form
+                onSubmit={handleManageBookingSubmit}
+                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5"
+              >
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={lookupRef}
+                    onChange={(e) => {
+                      setLookupRef(e.target.value.toUpperCase());
+                      setLookupAttempted(false);
+                    }}
+                    placeholder="Enter Booking Code (e.g. ADL-849201)"
+                    aria-label="Enter your Booking Code to view your official booking receipt"
+                    className="w-full pl-10 pr-3.5 py-3 text-sm font-mono uppercase bg-[#FAF7F2] text-[#0B2545] font-bold placeholder:text-stone-400 placeholder:font-normal border border-stone-300 rounded-xl focus:outline-none focus:border-[#0B2545]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-5 py-3 min-h-[46px] text-xs sm:text-sm font-semibold text-white bg-[#0B2545] hover:bg-[#163a66] rounded-xl transition-colors cursor-pointer whitespace-nowrap flex items-center justify-center gap-2 shrink-0 shadow-sm"
+                >
+                  <ShieldCheck className="w-4 h-4 text-[#D4A359]" />
+                  <span>View Official Receipt</span>
+                </button>
+              </form>
+
+              {lookupAttempted && !matchedLookupBooking && lookupRef.trim() && (
+                <p className="mt-2 text-xs text-red-700 font-medium">
+                  No reservation found for code <span className="font-mono font-bold">{lookupRef.trim()}</span>. Please verify the exact <span className="font-mono">ADL-XXXXXX</span> Booking Code copied upon payment.
+                </p>
+              )}
+
+              {!lookupAttempted && (
+                <p className="mt-2 text-[11px] text-stone-500 flex items-center justify-between gap-2">
+                  <span>Requires the Booking Code copied upon payment confirmation.</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLookupRef('ADL-849201');
+                      setLookupAttempted(true);
+                      setLookupOpen(true);
+                    }}
+                    className="font-mono text-[#0B2545] hover:text-[#C8963E] underline cursor-pointer shrink-0"
+                  >
+                    Preview Sample Receipt (ADL-849201)
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </motion.section>
 
       {/* 3. FIRST-TIMER WELCOME & 5 DEDICATED PAGE GATEWAYS */}
@@ -401,7 +489,7 @@ export default function HomePage() {
             <div className="flex items-center gap-4">
               <div className="relative w-24 h-16 shrink-0 rounded-xl bg-white p-1.5 border border-stone-200 shadow-xs">
                 <Image
-                  src="/images/hotel_doc_0.jpg"
+                  src={resolveHotelImageUrl('/images/hotel_doc_0.jpg')}
                   alt="The Adire Lagoon Hotel & Spa Crest"
                   fill
                   sizes="96px"
@@ -438,7 +526,7 @@ export default function HomePage() {
           >
             <div className="relative h-[300px] sm:h-[340px] rounded-3xl overflow-hidden border border-stone-200 shadow-lg group">
               <Image
-                src="/images/rooftop_pool_sunset_deck_1795566276755.jpg"
+                src={resolveHotelImageUrl('/images/rooftop_pool_sunset_deck_1795566276755.jpg')}
                 alt="The Adire Lagoon Hotel Rooftop Pool at Golden Hour"
                 fill
                 referrerPolicy="no-referrer"
@@ -784,7 +872,7 @@ export default function HomePage() {
             <div className="lg:col-span-5 space-y-3.5">
               <div className="relative w-44 h-28 rounded-xl bg-white p-2.5 shadow-sm">
                 <Image
-                  src="/images/hotel_doc_0.jpg"
+                  src={resolveHotelImageUrl('/images/hotel_doc_0.jpg')}
                   alt="The Adire Lagoon Hotel & Spa Official Logo"
                   fill
                   sizes="176px"
@@ -904,57 +992,56 @@ export default function HomePage() {
         <span>Chat on WhatsApp</span>
       </a>
 
-      {/* Manage Booking Lookup Modal */}
+      {/* Manage Booking Official Digital Stay Receipt Modal */}
       {lookupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6 space-y-4 border border-stone-200">
-            <div className="flex items-center justify-between">
-              <h3 className="font-serif text-xl font-bold text-[#0B2545]">
-                Manage Your Direct Booking
-              </h3>
-              <button
-                type="button"
-                onClick={() => setLookupOpen(false)}
-                className="text-xs text-stone-500 hover:text-stone-900 cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-            <p className="text-xs text-stone-600">
-              Enter your booking reference (e.g. <span className="font-mono">ADL-849201</span>) or guest email address:
-            </p>
-            <input
-              type="text"
-              value={lookupRef}
-              onChange={(e) => setLookupRef(e.target.value)}
-              placeholder="ADL-849201 or email"
-              className="w-full px-3.5 py-2 text-sm border border-stone-300 rounded-lg font-mono"
-            />
-            {matchedLookupBooking ? (
-              <div className="p-4 rounded-lg bg-[#FAF7F2] border border-stone-200 text-xs space-y-1.5">
-                <p className="font-bold text-[#0B2545] text-sm">
-                  {matchedLookupBooking.reference} — {matchedLookupBooking.roomName}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-3 sm:p-6 overflow-y-auto">
+          <div className="w-full max-w-4xl my-auto space-y-4">
+            {/* Top Search & Dismiss Bar inside Modal */}
+            <div className="bg-[#0B2545] text-white px-5 py-4 rounded-2xl border border-[#C8963E]/50 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 print:hidden">
+              <div>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-[#D4A359]">
+                  Manage Booking · Official Stay Receipt Verification
                 </p>
-                <p>Guest: {matchedLookupBooking.guestName}</p>
-                <p>
-                  Dates: {matchedLookupBooking.checkIn} to {matchedLookupBooking.checkOut} (
-                  {matchedLookupBooking.nights} nights)
-                </p>
-                <p>
-                  Total:{' '}
-                  <strong className="font-mono">
-                    {formatNaira(matchedLookupBooking.totalAmountNgn)}
-                  </strong>{' '}
-                  ({matchedLookupBooking.paymentStatus.toUpperCase()})
-                </p>
-                <p>Status: {matchedLookupBooking.bookingStatus.toUpperCase()}</p>
+                <h3 className="font-serif text-lg sm:text-xl font-bold text-white">
+                  Enter Your Booking Code to View Your Receipt
+                </h3>
               </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={lookupRef}
+                  onChange={(e) => setLookupRef(e.target.value.toUpperCase())}
+                  placeholder="ADL-849201"
+                  aria-label="Booking Code"
+                  className="px-3.5 py-2 text-xs sm:text-sm font-mono uppercase bg-[#13325B] text-[#D4A359] font-bold border border-white/25 rounded-lg focus:outline-none focus:border-[#C8963E] w-44 sm:w-52"
+                />
+                <button
+                  type="button"
+                  onClick={() => setLookupOpen(false)}
+                  className="p-2 text-white/75 hover:text-white bg-white/10 hover:bg-white/20 rounded-lg cursor-pointer transition-colors"
+                  aria-label="Close Receipt Modal"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {matchedLookupBooking ? (
+              <BookingReceiptFolio
+                booking={matchedLookupBooking}
+                onClose={() => setLookupOpen(false)}
+              />
             ) : (
-              lookupRef.trim() && (
-                <p className="text-xs text-amber-800">
-                  No matching reservation found. Try ADL-849201 or ADL-849202.
+              <div className="bg-white rounded-2xl p-8 text-center space-y-3 border border-stone-200 shadow-xl">
+                <p className="font-serif text-xl font-bold text-[#0B2545]">
+                  No Reservation Found for Booking Code &ldquo;{lookupRef.trim() || '—'}&rdquo;
                 </p>
-              )
+                <p className="text-xs sm:text-sm text-stone-600 max-w-md mx-auto">
+                  Please enter the exact <span className="font-mono font-bold">ADL-XXXXXX</span>{' '}
+                  Booking Code that you copied upon completing your payment.
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -1050,6 +1137,11 @@ export default function HomePage() {
         initialPromoCode={promoCodeInput}
         initialSelectedAddOns={initialAddOns}
         startAtStep={modalStartStep}
+        onOpenManageBookingWithCode={(code) => {
+          setLookupRef(code.toUpperCase());
+          setLookupAttempted(true);
+          setLookupOpen(true);
+        }}
       />
     </div>
   );

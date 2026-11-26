@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Copy,
   Maximize2,
+  Lock,
 } from 'lucide-react';
 import {
   RoomCategory,
@@ -29,6 +30,7 @@ import {
 } from '@/lib/hotel-data';
 import { useHotelStore } from '@/lib/hotel-store';
 import AvailabilityCalendar from '@/components/AvailabilityCalendar';
+import BookingReceiptFolio from '@/components/BookingReceiptFolio';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -48,6 +50,7 @@ interface BookingModalProps {
   initialPromoCode?: string;
   initialSelectedAddOns?: string[];
   startAtStep?: 1 | 2 | 3;
+  onOpenManageBookingWithCode?: (bookingCode: string) => void;
 }
 
 interface PaystackSession {
@@ -93,6 +96,7 @@ export default function BookingModal({
   initialPromoCode = '',
   initialSelectedAddOns,
   startAtStep,
+  onOpenManageBookingWithCode,
 }: BookingModalProps) {
   const {
     rooms,
@@ -128,6 +132,8 @@ export default function BookingModal({
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [confirmedBooking, setConfirmedBooking] = useState<BookingRecord | null>(null);
   const [copiedRef, setCopiedRef] = useState<boolean>(false);
+  const [hasCopiedCode, setHasCopiedCode] = useState<boolean>(false);
+  const [copyGateWarning, setCopyGateWarning] = useState<string>('');
   const [expandedPreviewRoom, setExpandedPreviewRoom] = useState<RoomCategory | null>(null);
 
   // Track prop changes cleanly without synchronous effect cascading
@@ -139,6 +145,9 @@ export default function BookingModal({
     setErrorMsg('');
     setPaystackSession(null);
     setConfirmedBooking(null);
+    setHasCopiedCode(false);
+    setCopiedRef(false);
+    setCopyGateWarning('');
     setStep(startAtStep || (selectedRoom ? 3 : 1));
     if (initialSelectedAddOns && initialSelectedAddOns.length > 0) {
       setSelectedAddOns(initialSelectedAddOns);
@@ -416,7 +425,7 @@ export default function BookingModal({
           <div className="flex items-center gap-3 min-w-0 pr-2">
             <div className="relative w-14 h-10 sm:w-16 sm:h-11 rounded-md bg-white p-1 shrink-0">
               <Image
-                src="/images/hotel_doc_0.jpg"
+                src={resolveHotelImageUrl('/images/hotel_doc_0.jpg')}
                 alt="The Adire Lagoon Hotel & Spa Logo"
                 fill
                 sizes="64px"
@@ -435,7 +444,15 @@ export default function BookingModal({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (step === 5 && confirmedBooking && !hasCopiedCode) {
+                setCopyGateWarning(
+                  `Required before closing: Please click "Copy Booking Code (${confirmedBooking.reference})" below so you can access your receipt anytime in Manage Booking.`
+                );
+                return;
+              }
+              onClose();
+            }}
             className="p-2 min-h-[40px] min-w-[40px] flex items-center justify-center text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer shrink-0"
             aria-label="Close booking modal"
           >
@@ -1451,101 +1468,179 @@ export default function BookingModal({
             </div>
           )}
 
-          {/* STEP 5: CONFIRMATION PAGE (Content Pack Section 18 exact copy) */}
+          {/* STEP 5: CONFIRMATION PAGE WITH MANDATORY BOOKING CODE COPY GATE & PREMIUM RECEIPT FOLIO */}
           {step === 5 && confirmedBooking && (
-            <div className="max-w-2xl mx-auto text-center space-y-5 py-4">
-              <div className="relative w-32 h-20 mx-auto">
-                <Image
-                  src="/images/hotel_doc_0.jpg"
-                  alt="The Adire Lagoon Hotel & Spa Logo"
-                  fill
-                  sizes="128px"
-                  referrerPolicy="no-referrer"
-                  className="object-contain"
-                />
-              </div>
-              <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto">
-                <Check className="w-6 h-6" />
-              </div>
+            <div className="max-w-3xl mx-auto space-y-6 py-2">
+              {/* MANDATORY BOOKING CODE COPY VAULT */}
+              <div
+                className={`rounded-2xl p-5 sm:p-6 border-2 transition-all ${
+                  hasCopiedCode
+                    ? 'bg-emerald-950 text-white border-emerald-500 shadow-lg'
+                    : 'bg-[#0B2545] text-white border-[#C8963E] shadow-2xl'
+                }`}
+              >
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+                  <div className="space-y-2 text-left">
+                    <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[#D4A359]">
+                      {hasCopiedCode ? (
+                        <>
+                          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span className="text-emerald-300 font-bold">
+                            Booking Code Copied &amp; Verified
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-[#D4A359] shrink-0" />
+                          <span className="font-bold">
+                            Mandatory Step Before Closing · Save Your Booking Code
+                          </span>
+                        </>
+                      )}
+                    </div>
 
-              <div className="space-y-2">
-                <p className="text-xs font-mono uppercase text-emerald-800 font-semibold">
-                  Booking Reference: {confirmedBooking.reference}
-                </p>
-                <h3 className="font-serif text-3xl font-bold text-[#0B2545]">
-                  E kaabo! Your stay is confirmed.
-                </h3>
-                <p className="text-sm text-stone-600 max-w-lg mx-auto">
-                  We can&apos;t wait to welcome you to The Adire. A confirmation email and WhatsApp message are on their way.
-                </p>
-              </div>
+                    <h3 className="font-serif text-2xl sm:text-3xl font-bold text-white leading-tight">
+                      E kaabo! Copy your Booking Code:{' '}
+                      <span className="font-mono text-[#D4A359] underline decoration-[#C8963E]/60 underline-offset-4">
+                        {confirmedBooking.reference}
+                      </span>
+                    </h3>
 
-              <div className="bg-[#FAF7F2] p-5 rounded-xl border border-stone-200 text-left grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <p className="text-stone-500">Guest Name</p>
-                  <p className="font-semibold text-stone-900 text-sm">
-                    {confirmedBooking.guestName}
-                  </p>
-                  <p className="text-stone-600 mt-0.5">{confirmedBooking.guestPhone}</p>
+                    <p className="text-xs sm:text-sm text-stone-200 leading-relaxed max-w-xl">
+                      Please copy your Booking Code now. You will enter{' '}
+                      <strong className="font-mono text-[#D4A359]">
+                        {confirmedBooking.reference}
+                      </strong>{' '}
+                      in the standalone <strong>Manage Booking</strong> section on the home page
+                      anytime you want to view or print your official stay receipt. Your booking
+                      remains valid strictly for your booked stay range (
+                      <strong className="text-white">
+                        {confirmedBooking.checkIn} to {confirmedBooking.checkOut}
+                      </strong>
+                      ).
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 flex flex-col items-stretch sm:items-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        try {
+                          if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(confirmedBooking.reference);
+                          } else {
+                            const el = document.createElement('textarea');
+                            el.value = confirmedBooking.reference;
+                            document.body.appendChild(el);
+                            el.select();
+                            document.execCommand('copy');
+                            document.body.removeChild(el);
+                          }
+                        } catch {
+                          // Clipboard fallback complete
+                        }
+                        setCopiedRef(true);
+                        setHasCopiedCode(true);
+                        setCopyGateWarning('');
+                      }}
+                      className={`px-6 py-4 rounded-xl font-mono text-sm font-bold flex items-center justify-center gap-2.5 cursor-pointer transition-all shadow-lg whitespace-nowrap ${
+                        hasCopiedCode
+                          ? 'bg-emerald-500 hover:bg-emerald-400 text-emerald-950'
+                          : 'bg-[#C8963E] hover:bg-[#d9a648] text-white ring-4 ring-[#C8963E]/30'
+                      }`}
+                    >
+                      {hasCopiedCode ? (
+                        <>
+                          <Check className="w-5 h-5" />
+                          <span>Copied: {confirmedBooking.reference}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-5 h-5" />
+                          <span>Copy Booking Code ({confirmedBooking.reference})</span>
+                        </>
+                      )}
+                    </button>
+                    <span className="text-[11px] font-mono text-stone-300 text-center sm:text-right">
+                      {hasCopiedCode
+                        ? '✓ Unlocked — You may now close or open Manage Booking'
+                        : 'Required to unlock "Done" and close this window'}
+                    </span>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-stone-500">Room &amp; Duration</p>
-                  <p className="font-semibold text-stone-900 text-sm">
-                    {confirmedBooking.roomName} × {confirmedBooking.roomsCount}
-                  </p>
-                  <p className="text-stone-600 mt-0.5">
-                    {confirmedBooking.checkIn} → {confirmedBooking.checkOut} ({confirmedBooking.nights}{' '}
-                    nights)
-                  </p>
-                </div>
-                <div>
-                  <p className="text-stone-500">Payment Status</p>
-                  <p className="font-semibold text-emerald-800">
-                    {confirmedBooking.paymentStatus === 'paid'
-                      ? `Paid via Paystack (${confirmedBooking.paystackReference})`
-                      : 'Confirmed Hotel Hold (Pay at Reception)'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-stone-500">Total Amount (Incl. VAT &amp; Taxes)</p>
-                  <p className="font-mono text-base font-bold text-[#0B2545] tabular-nums">
-                    {formatNaira(confirmedBooking.totalAmountNgn)}
-                  </p>
-                </div>
+
+                {copyGateWarning && !hasCopiedCode && (
+                  <div className="mt-4 p-3 rounded-xl bg-amber-500/20 border border-amber-400/60 text-amber-100 text-xs flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span>{copyGateWarning}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <a
-                  href={`https://wa.me/2348000002485?text=${encodeURIComponent(
-                    `E kaabo Adire Lagoon Front Desk! Please find my confirmed direct booking ${confirmedBooking.reference} for ${confirmedBooking.guestName} (${confirmedBooking.roomName}, Check-in: ${confirmedBooking.checkIn}, Total: ${formatNaira(confirmedBooking.totalAmountNgn)}).`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-5 py-2.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg flex items-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" /> Open WhatsApp Receipt
-                </a>
+              {/* OFFICIAL PREMIUM STAY RECEIPT FOLIO */}
+              <BookingReceiptFolio booking={confirmedBooking} />
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(confirmedBooking.reference);
-                    setCopiedRef(true);
-                    setTimeout(() => setCopiedRef(false), 2000);
-                  }}
-                  className="px-4 py-2.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                  {copiedRef ? 'Copied Reference!' : 'Copy Booking Reference'}
-                </button>
+              {/* STEP 5 BOTTOM COMPLETION CONTROLS (GATED BY MANDATORY COPY) */}
+              <div className="bg-[#FAF7F2] p-4 sm:p-5 rounded-xl border border-stone-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-xs text-stone-600 text-center sm:text-left">
+                  {hasCopiedCode ? (
+                    <span className="text-emerald-800 font-semibold">
+                      ✓ Booking Code {confirmedBooking.reference} copied to clipboard. Use it anytime
+                      in the Manage Booking field on the home page.
+                    </span>
+                  ) : (
+                    <span className="text-amber-900 font-semibold">
+                      ⚠ Copy your Booking Code ({confirmedBooking.reference}) above to unlock the
+                      buttons on the right.
+                    </span>
+                  )}
+                </div>
 
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-5 py-2.5 text-xs font-semibold text-white bg-[#0B2545] hover:bg-[#163963] rounded-lg cursor-pointer"
-                >
-                  Done
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
+                  {onOpenManageBookingWithCode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!hasCopiedCode) {
+                          setCopyGateWarning(
+                            `Please click "Copy Booking Code (${confirmedBooking.reference})" at the top first to unlock.`
+                          );
+                          return;
+                        }
+                        onClose();
+                        onOpenManageBookingWithCode(confirmedBooking.reference);
+                      }}
+                      className={`px-4 py-2.5 text-xs font-semibold rounded-lg border transition-colors cursor-pointer ${
+                        hasCopiedCode
+                          ? 'bg-white text-[#0B2545] border-[#0B2545] hover:bg-stone-100'
+                          : 'bg-stone-100 text-stone-400 border-stone-200 cursor-not-allowed'
+                      }`}
+                    >
+                      Check in Manage Booking
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!hasCopiedCode) {
+                        setCopyGateWarning(
+                          `Please click "Copy Booking Code (${confirmedBooking.reference})" at the top before closing.`
+                        );
+                        return;
+                      }
+                      onClose();
+                    }}
+                    className={`px-6 py-2.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
+                      hasCopiedCode
+                        ? 'bg-[#0B2545] hover:bg-[#163963] text-white'
+                        : 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {!hasCopiedCode && <Lock className="w-3.5 h-3.5" />}
+                    <span>{hasCopiedCode ? 'Done & Close' : 'Copy Code to Unlock Done'}</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
